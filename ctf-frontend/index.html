@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CTF-LITE | Login</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="assets/css/styles.css" />
+    <style>
+      .login-layout {
+        display: grid;
+        grid-template-columns: 1.1fr 0.9fr;
+        gap: 20px;
+        align-items: start;
+      }
+      .briefing-panel {
+        padding: 28px;
+        display: flex;
+        flex-direction: column;
+        gap: 22px;
+      }
+      .briefing-header {
+        font-family: 'IBM Plex Mono', monospace;
+        font-size: 0.68rem;
+        letter-spacing: 1.5px;
+        color: var(--hint);
+        text-transform: uppercase;
+        padding-bottom: 10px;
+        border-bottom: 1px solid var(--panel-border);
+        display: flex;
+        justify-content: space-between;
+      }
+      .briefing-title {
+        font-family: 'IBM Plex Mono', monospace;
+        font-size: 2rem;
+        font-weight: 600;
+        letter-spacing: 1px;
+        color: var(--text);
+        line-height: 1.2;
+      }
+      .briefing-title em {
+        font-style: normal;
+        color: rgba(255,255,255,0.45);
+      }
+      .briefing-body {
+        font-size: 0.9rem;
+        color: var(--muted);
+        line-height: 1.7;
+        border-left: 1px solid rgba(255,255,255,0.15);
+        padding-left: 14px;
+      }
+      .visual-block {
+        background: rgba(255,255,255,0.02);
+        border: 1px solid var(--panel-border);
+        border-radius: 8px;
+        padding: 14px;
+        position: relative;
+        overflow: hidden;
+        min-height: 340px;
+        display: grid;
+        align-items: center;
+      }
+
+      
+      .blob-wrapper {
+        position: absolute;
+        inset: -50px;
+        filter: url('#metaball');
+        z-index: -1;
+      }
+
+      /* blob-4 moved below */
+
+      .liquid-glass-wrap {
+        position: relative;
+        width: 100%;
+        height: 320px;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 16px;
+        background: rgba(255, 255, 255, 0.05);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        overflow: hidden;
+        box-shadow: inset 0 0 20px rgba(255,255,255,0.05), inset 0 0 10px rgba(255, 255, 255, 0.1);
+        z-index: 1;
+        transform-style: preserve-3d;
+        transition: transform 0.1s ease-out;
+      }
+
+      .blob {
+        position: absolute;
+        z-index: -1;
+        opacity: 0.8;
+      }
+
+      .blob-1 {
+        width: 200px; height: 200px;
+        background: linear-gradient(135deg, #ff0844 0%, #ffb199 100%);
+        top: -10%; left: -10%;
+        border-radius: 40% 60% 70% 30% / 40% 40% 60% 50%;
+        animation: float-1 15s infinite alternate ease-in-out;
+      }
+
+      .blob-2 {
+        width: 180px; height: 180px;
+        background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        bottom: -10%; right: -10%;
+        border-radius: 60% 40% 30% 70% / 50% 60% 40% 40%;
+        animation: float-2 18s infinite alternate ease-in-out;
+      }
+
+      .blob-3 {
+        width: 160px; height: 160px;
+        background: linear-gradient(135deg, #8E2DE2 0%, #4A00E0 100%);
+        bottom: 20%; left: -10%;
+        border-radius: 50% 50% 40% 60% / 60% 40% 70% 30%;
+        animation: float-3 20s infinite alternate ease-in-out;
+      }
+
+      .blob-4 {
+        width: 140px; height: 140px;
+        background: linear-gradient(135deg, #0cebeb 0%, #ff0844 100%);
+        top: 10%; right: 10%;
+        border-radius: 40% 50% 60% 50% / 60% 50% 40% 60%;
+        animation: float-4 17s infinite alternate ease-in-out;
+      }
+
+      @keyframes float-1 {
+        0%   { transform: translate(0, 0) scale(1) rotate(0deg); }
+        50%  { transform: translate(160px, 120px) scale(0.8) rotate(90deg); }
+        100% { transform: translate(80px, 220px) scale(1.1) rotate(180deg); }
+      }
+      @keyframes float-2 {
+        0%   { transform: translate(0, 0) scale(0.9) rotate(0deg); }
+        50%  { transform: translate(-180px, -120px) scale(1.1) rotate(-90deg); }
+        100% { transform: translate(-100px, -240px) scale(0.8) rotate(-180deg); }
+      }
+      @keyframes float-3 {
+        0%   { transform: translate(0, 0) scale(1.1) rotate(0deg); }
+        50%  { transform: translate(180px, -110px) scale(0.9) rotate(120deg); }
+        100% { transform: translate(260px, -20px) scale(1.2) rotate(240deg); }
+      }
+      @keyframes float-4 {
+        0%   { transform: translate(0, 0) scale(1) rotate(0deg); }
+        50%  { transform: translate(-150px, 160px) scale(1.2) rotate(-120deg); }
+        100% { transform: translate(-220px, 40px) scale(0.9) rotate(-240deg); }
+      }
+
+      .glass-content {
+        position: relative;
+        z-index: 2;
+        text-align: center;
+        color: #fff;
+        font-family: 'IBM Plex Mono', monospace;
+        transform: translateZ(30px);
+        pointer-events: none;
+      }
+
+      .glass-shield {
+        width: 70px;
+        height: 70px;
+        margin: 0 auto 16px;
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.4);
+        border-radius: 50%;
+        display: grid;
+        place-items: center;
+        box-shadow: inset 0 0 20px rgba(255,255,255,0.2), 0 8px 32px rgba(0,0,0,0.2);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+      }
+
+      .glass-shield svg {
+        width: 32px;
+        height: 32px;
+        fill: none;
+        stroke: rgba(255,255,255,1);
+        stroke-width: 2;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        filter: drop-shadow(0 0 8px rgba(255,255,255,0.6));
+      }
+      
+      .liquid-glass-wrap:hover .blob {
+         filter: blur(20px);
+         opacity: 1;
+         transform: scale(1.05);
+         transition: all 0.5s ease;
+      }
+      
+      .glass-text {
+        font-size: 1.1rem;
+        font-weight: 600;
+        letter-spacing: 3px;
+        text-shadow: 0 4px 15px rgba(0,0,0,0.3);
+      }
+      .mini-stat-val {
+        font-family: 'IBM Plex Mono', monospace;
+        font-size: 1.3rem;
+        font-weight: 500;
+        color: var(--text);
+      }
+      .auth-panels { display: flex; flex-direction: column; gap: 16px; }
+      .auth-panel-header {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 16px;
+      }
+      .auth-panel-header h3 { margin-bottom: 0; border: none; padding: 0; color: var(--text); font-size: 0.82rem; }
+      .auth-step {
+        width: 22px; height: 22px;
+        background: rgba(255,255,255,0.08);
+        border: 1px solid rgba(255,255,255,0.2);
+        color: var(--muted);
+        font-family: 'IBM Plex Mono', monospace;
+        font-size: 0.72rem;
+        font-weight: 600;
+        display: grid;
+        place-items: center;
+        border-radius: 4px;
+        flex-shrink: 0;
+      }
+      @media (max-width: 900px) {
+        .login-layout { grid-template-columns: 1fr; }
+        .visual-block {
+          min-height: 250px;
+          padding: 12px;
+        }
+        
+      .blob-wrapper {
+        position: absolute;
+        inset: -50px;
+        filter: url('#metaball');
+        z-index: -1;
+      }
+
+      .magnetic-blob {
+        position: absolute;
+        width: 140px;
+        height: 140px;
+        background: linear-gradient(135deg, #0cebeb 0%, #ff0844 100%);
+        border-radius: 50%;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        pointer-events: none;
+      }
+
+      .liquid-glass-wrap {
+          height: 236px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="grid-overlay"></div>
+    <svg style="width:0;height:0;position:absolute;visibility:hidden;" aria-hidden="true" focusable="false">
+      <defs>
+        <filter id="metaball">
+          <feGaussianBlur in="SourceGraphic" stdDeviation="15" result="blur" />
+          <feColorMatrix in="blur" mode="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 25 -10" result="metablob" />
+          <feBlend in="SourceGraphic" in2="metablob" />
+        </filter>
+      </defs>
+    </svg>
+
+    <main class="page">
+
+      <!-- TOPBAR -->
+      <header class="topbar reveal">
+        <div class="brand">
+          <div class="brand-mark">CTF</div>
+          <div>
+            <h1>CTF-LITE</h1>
+            <div class="brand-sub">Capture the Flag Platform</div>
+          </div>
+        </div>
+        <div class="nav-actions">
+          <a class="btn btn-secondary" href="leaderboard.html">Leaderboard</a>
+          <a class="btn btn-secondary" href="admin.html">Admin</a>
+        </div>
+      </header>
+
+      <!-- MAIN LAYOUT -->
+      <div class="login-layout">
+
+        <!-- LEFT: OVERVIEW -->
+        <article class="card panel briefing-panel reveal">
+          <div class="briefing-header">
+            <span>Platform Overview</span>
+          </div>
+
+          <div class="briefing-title">
+            Capture.<br/><em>Decode.</em><br/>Outrank.
+          </div>
+
+          <div class="briefing-body">
+            Register your account, form or join a team, then work through
+            challenge categories — web exploitation, cryptography, forensics,
+            and binary analysis. Submit correct flags to earn points and climb
+            the leaderboard in real time.
+          </div>
+
+          <!-- GLASS VISUAL BLOCK -->
+          <div class="visual-block">
+            <div class="liquid-glass-wrap" id="interactiveOrb">
+              <div class="blob-wrapper">
+                <div class="blob blob-1"></div>
+                <div class="blob blob-2"></div>
+                <div class="blob blob-3"></div>
+                <div class="blob blob-4"></div>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <!-- RIGHT: AUTH PANELS -->
+        <div class="auth-panels">
+
+          <!-- REGISTER -->
+          <article class="card panel reveal" style="animation-delay: 0.06s">
+            <div class="auth-panel-header">
+              <div class="auth-step">01</div>
+              <h3>Register</h3>
+            </div>
+            <form id="registerForm" class="grid" autocomplete="off">
+              <label>
+                Full Name
+                <input id="regName" required placeholder="Jane Doe" />
+              </label>
+              <label>
+                Email Address
+                <input id="regEmail" type="email" required placeholder="jane@college.edu" />
+              </label>
+              <label>
+                Team Name
+                <input id="regTeam" required placeholder="Byte Raiders" />
+              </label>
+              <button class="btn btn-primary" type="submit" style="margin-top:4px;">Create Account</button>
+            </form>
+          </article>
+
+          <!-- LOGIN -->
+          <article class="card panel reveal" style="animation-delay: 0.12s">
+            <div class="auth-panel-header">
+              <div class="auth-step">02</div>
+              <h3>Login</h3>
+            </div>
+            <form id="loginForm" class="grid" autocomplete="off">
+              <label>
+                Email
+                <input id="loginEmail" type="email" required placeholder="jane@college.edu" />
+              </label>
+              <button class="btn btn-primary" type="submit" style="margin-top:4px;">Enter Dashboard</button>
+            </form>
+          </article>
+
+        </div>
+      </div>
+
+    </main>
+
+    <script>
+      (() => {
+        const wrap = document.getElementById('interactiveOrb');
+        if (!wrap) return;
+
+        let targetX = 0;
+        let targetY = 0;
+        let currentX = 0;
+        let currentY = 0;
+
+        const ease = 0.08;
+
+        const tick = () => {
+          currentX += (targetX - currentX) * ease;
+          currentY += (targetY - currentY) * ease;
+
+          wrap.style.transform = `perspective(800px) rotateY(${currentX * 12}deg) rotateX(${-currentY * 12}deg)`;
+
+          requestAnimationFrame(tick);
+        };
+
+        wrap.parentElement.addEventListener('pointermove', (event) => {
+          const rect = wrap.parentElement.getBoundingClientRect();
+          const px = (event.clientX - rect.left) / rect.width;
+          const py = (event.clientY - rect.top) / rect.height;
+
+          targetX = px - 0.5;
+          targetY = py - 0.5;
+        });
+
+        wrap.parentElement.addEventListener('pointerleave', () => {
+          targetX = 0;
+          targetY = 0;
+        });
+
+        requestAnimationFrame(tick);
+      })();
+    </script>
+
+    <script src="assets/js/common.js"></script>
+    <script src="assets/js/runtime-config.js"></script>
+    <script src="assets/js/api.js"></script>
+    <script src="assets/js/auth.js"></script>
+  </body>
+</html>

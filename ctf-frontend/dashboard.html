@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CTF-LITE | Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="assets/css/styles.css" />
+    <style>
+      .dash-layout {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+        align-items: start;
+      }
+      .challenge-detail-panel {
+        position: sticky;
+        top: 16px;
+      }
+      .selected-detail {
+        background: rgba(255,255,255,0.02);
+        border: 1px solid var(--panel-border);
+        border-radius: 6px;
+        padding: 14px;
+        margin-bottom: 14px;
+        min-height: 80px;
+      }
+      .selected-detail h3 {
+        border: none;
+        padding: 0;
+        margin-bottom: 8px;
+        font-size: 0.82rem;
+        color: var(--text);
+        letter-spacing: 1px;
+      }
+      #selectedQuestion {
+        font-size: 0.88rem;
+        line-height: 1.6;
+        color: var(--muted);
+      }
+      .flag-form {
+        border-top: 1px solid var(--panel-border);
+        padding-top: 14px;
+        margin-top: 14px;
+      }
+      .flag-row {
+        display: flex;
+        gap: 8px;
+        margin-top: 6px;
+      }
+      .flag-row input {
+        flex: 1;
+        font-family: 'IBM Plex Mono', monospace;
+        font-size: 0.88rem;
+      }
+      .flag-row .btn {
+        white-space: nowrap;
+        flex-shrink: 0;
+      }
+      .topbar-inner {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        flex: 1;
+        min-width: 0;
+      }
+      .kpi-row {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 12px;
+        margin-bottom: 16px;
+      }
+      .kpi-card {
+        background: rgba(255,255,255,0.03);
+        border: 1px solid var(--panel-border);
+        border-radius: var(--radius-lg);
+        padding: 16px;
+        position: relative;
+        overflow: hidden;
+        transition: border-color 0.2s ease;
+      }
+      .kpi-card:hover { border-color: rgba(255,255,255,0.16); }
+      .kpi-card-top { border-top: 1px solid rgba(255,255,255,0.25); }
+      .kpi-label {
+        font-family: 'IBM Plex Mono', monospace;
+        font-size: 0.65rem;
+        letter-spacing: 1.5px;
+        color: var(--hint);
+        text-transform: uppercase;
+        margin-bottom: 8px;
+      }
+      @media (max-width: 900px) {
+        .dash-layout { grid-template-columns: 1fr; }
+        .kpi-row { grid-template-columns: 1fr 1fr; }
+        .challenge-detail-panel { position: static; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="grid-overlay"></div>
+    <main class="page">
+
+      <!-- TOPBAR -->
+      <header class="topbar reveal">
+        <div style="display:flex; align-items:center; gap:14px; flex:1; min-width:0;">
+          <div class="brand-mark">CTF</div>
+          <div class="topbar-inner">
+            <div style="font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:0.95rem;letter-spacing:2px;text-transform:uppercase;color:var(--text);">
+              CTF-LITE
+            </div>
+            <div id="teamMeta" class="badge" style="width:fit-content;">Session loading...</div>
+          </div>
+        </div>
+        <div class="nav-actions">
+          <a class="btn btn-secondary" href="leaderboard.html">Leaderboard</a>
+          <button id="logoutBtn" class="btn btn-danger">Logout</button>
+        </div>
+      </header>
+
+      <!-- KPI ROW -->
+      <div class="kpi-row reveal" style="animation-delay:0.05s">
+        <div class="kpi-card kpi-card-top card-floating" style="animation-delay: 0s">
+          <div class="kpi-label">Team Score</div>
+          <div class="kpi">
+            <strong id="kpiScore">0</strong>
+            <div class="kpi-tag">Cumulative points earned</div>
+          </div>
+        </div>
+        <div class="kpi-card card-floating" style="animation-delay: 0.1s">
+          <div class="kpi-label">Challenges</div>
+          <div class="kpi">
+            <strong id="kpiChallenges">0</strong>
+            <div class="kpi-tag">Total challenges available</div>
+          </div>
+        </div>
+        <div class="kpi-card card-floating" style="animation-delay: 0.2s">
+          <div class="kpi-label">Current Stage</div>
+          <div class="kpi">
+            <strong id="kpiStage">—</strong>
+            <div class="kpi-tag" id="kpiStageLabel">Assigned challenge number</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- DASHBOARD LAYOUT -->
+      <div class="dash-layout">
+
+        <!-- LEFT: CHALLENGE BOARD -->
+        <article class="card panel reveal" style="animation-delay:0.08s">
+          <h3>Challenges</h3>
+          <label style="margin-bottom:12px;">
+            Category
+            <select id="categorySelect"></select>
+          </label>
+          <div class="section-label">Active challenges</div>
+          <div id="challengeGrid" class="challenge-grid"></div>
+        </article>
+
+        <!-- RIGHT: CHALLENGE DETAIL -->
+        <div class="challenge-detail-panel">
+          <article class="card panel reveal" style="animation-delay:0.12s">
+            <h3>Challenge Details</h3>
+
+            <div class="selected-detail">
+              <h3 id="selectedTitle" style="font-family:'IBM Plex Mono',monospace; font-size:0.8rem; letter-spacing:1px; color:var(--muted);">
+                Select a challenge
+              </h3>
+              <p id="selectedQuestion">
+                Choose a challenge card from the board to view its details and submit your flag.
+              </p>
+            </div>
+
+            <div id="hintsWrap"></div>
+
+            <div class="flag-form">
+              <div class="section-label">Submit flag</div>
+              <form id="submitForm">
+                <div class="flag-row">
+                  <input id="flagInput" placeholder="CTF{...}" autocomplete="off" />
+                  <button class="btn btn-primary" type="submit">Submit</button>
+                </div>
+              </form>
+            </div>
+          </article>
+        </div>
+
+      </div>
+
+    </main>
+
+    <script src="assets/js/common.js"></script>
+    <script src="assets/js/runtime-config.js"></script>
+    <script src="assets/js/api.js"></script>
+    <script src="assets/js/dashboard.js"></script>
+  </body>
+</html>

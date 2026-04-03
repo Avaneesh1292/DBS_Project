@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CTF-LITE | Leaderboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="assets/css/styles.css" />
+    <style>
+      .leaderboard-layout {
+        display: grid;
+        grid-template-columns: 200px 1fr;
+        gap: 16px;
+        align-items: start;
+      }
+      .stats-panel {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+        padding: 20px 16px;
+      }
+      .stats-panel-title {
+        font-family: 'IBM Plex Mono', monospace;
+        font-size: 0.65rem;
+        letter-spacing: 2px;
+        color: var(--hint);
+        text-transform: uppercase;
+        padding-bottom: 10px;
+        border-bottom: 1px solid var(--panel-border);
+      }
+      .summary-stats { display: flex; flex-direction: column; gap: 10px; }
+      .summary-stat-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding-bottom: 8px;
+        border-bottom: 1px solid var(--panel-border);
+      }
+      .summary-stat-row .s-label {
+        font-family: 'IBM Plex Mono', monospace;
+        font-size: 0.65rem;
+        color: var(--hint);
+        letter-spacing: 1px;
+        text-transform: uppercase;
+      }
+      .summary-stat-row .s-value {
+        font-family: 'IBM Plex Mono', monospace;
+        color: var(--text);
+        font-size: 0.8rem;
+        font-weight: 500;
+      }
+      .board-header-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-bottom: 16px;
+      }
+      .board-header-row h3 { margin-bottom: 0; border: none; padding: 0; }
+      .refresh-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-family: 'IBM Plex Mono', monospace;
+        font-size: 0.7rem;
+        color: var(--muted);
+      }
+      .rank-badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 26px; height: 26px;
+        font-family: 'IBM Plex Mono', monospace;
+        font-size: 0.75rem;
+        font-weight: 600;
+        border-radius: 4px;
+      }
+      .rank-1 { background: rgba(255,255,255,0.92); color: #000; }
+      .rank-2 { background: rgba(255,255,255,0.55); color: #000; }
+      .rank-3 { background: rgba(255,255,255,0.28); color: rgba(255,255,255,0.9); }
+      .rank-n { background: rgba(255,255,255,0.05); color: var(--muted); border: 1px solid var(--panel-border); }
+      @media (max-width: 800px) {
+        .leaderboard-layout { grid-template-columns: 1fr; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="grid-overlay"></div>
+    <main class="page">
+
+      <!-- TOPBAR -->
+      <header class="topbar reveal">
+        <div class="brand">
+          <div class="brand-mark">CTF</div>
+          <div>
+            <h2>CTF-LITE</h2>
+            <div class="brand-sub">Global Leaderboard</div>
+          </div>
+        </div>
+        <div class="nav-actions">
+          <a class="btn btn-secondary" href="index.html">Login</a>
+          <a class="btn btn-secondary" href="dashboard.html">Dashboard</a>
+        </div>
+      </header>
+
+      <!-- LAYOUT -->
+      <div class="leaderboard-layout">
+
+        <!-- LEFT: STATS PANEL -->
+        <article class="card stats-panel reveal">
+          <div class="stats-panel-title">Overview</div>
+
+          <div class="summary-stats" id="boardStats">
+            <div class="summary-stat-row">
+              <span class="s-label">Teams</span>
+              <span class="s-value" id="statTeams">—</span>
+            </div>
+            <div class="summary-stat-row">
+              <span class="s-label">Top Score</span>
+              <span class="s-value" id="statTop">—</span>
+            </div>
+            <div class="summary-stat-row">
+              <span class="s-label">Status</span>
+              <span class="s-value status-ok" id="statStatus" style="display:flex;align-items:center;gap:6px;">
+                <span class="live-dot"></span>Live
+              </span>
+            </div>
+          </div>
+
+          <div>
+            <div class="section-label" style="margin-bottom:12px;">Categories</div>
+            <div class="cat-bar-wrap">
+              <div class="cat-bar-row">
+                <div class="cat-bar-label"><span>Web</span></div>
+                <div class="cat-bar-track"><div class="cat-bar-fill" style="width:75%"></div></div>
+              </div>
+              <div class="cat-bar-row">
+                <div class="cat-bar-label"><span>Crypto</span></div>
+                <div class="cat-bar-track"><div class="cat-bar-fill" style="width:55%"></div></div>
+              </div>
+              <div class="cat-bar-row">
+                <div class="cat-bar-label"><span>Forensics</span></div>
+                <div class="cat-bar-track"><div class="cat-bar-fill" style="width:40%"></div></div>
+              </div>
+              <div class="cat-bar-row">
+                <div class="cat-bar-label"><span>Binary</span></div>
+                <div class="cat-bar-track"><div class="cat-bar-fill" style="width:25%"></div></div>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <!-- RIGHT: LEADERBOARD TABLE -->
+        <article class="card panel reveal" style="animation-delay:0.08s">
+          <div class="board-header-row">
+            <h3>Team Rankings</h3>
+            <div class="refresh-row">
+              <span class="live-dot"></span>
+              <span>Live</span>
+              <button id="refreshBtn" class="btn btn-secondary" style="padding:6px 14px; font-size:0.75rem;">Refresh</button>
+            </div>
+          </div>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th style="width:52px">Rank</th>
+                  <th>Team Name</th>
+                  <th style="width:100px">Score</th>
+                </tr>
+              </thead>
+              <tbody id="leaderboardBody"></tbody>
+            </table>
+          </div>
+        </article>
+
+      </div>
+
+    </main>
+
+    <script src="assets/js/common.js"></script>
+    <script src="assets/js/runtime-config.js"></script>
+    <script src="assets/js/api.js"></script>
+    <script src="assets/js/leaderboard.js"></script>
+  </body>
+</html>

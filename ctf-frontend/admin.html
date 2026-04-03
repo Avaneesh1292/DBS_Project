@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CTF-LITE | Admin</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="assets/css/styles.css" />
+    <style>
+      .admin-lock-screen {
+        min-height: 70vh;
+        display: grid;
+        place-items: center;
+      }
+      .admin-lock-card {
+        width: min(520px, 92vw);
+      }
+      .admin-lock-actions {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        margin-top: 12px;
+      }
+      .admin-lock-error {
+        margin-top: 8px;
+        color: var(--danger);
+        font-family: 'IBM Plex Mono', monospace;
+        font-size: 0.78rem;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="grid-overlay"></div>
+    <main class="page" id="adminRoot" hidden>
+      <header class="topbar">
+        <div class="brand">
+          <div class="brand-mark">CTF</div>
+          <div>
+            <h2>CTF-LITE</h2>
+            <div class="brand-sub">Admin Console</div>
+          </div>
+        </div>
+        <div class="nav-actions">
+          <a class="btn btn-secondary" href="dashboard.html">Dashboard</a>
+          <a class="btn btn-secondary" href="leaderboard.html">Leaderboard</a>
+        </div>
+      </header>
+
+      <section class="grid grid-2">
+        <article class="card panel reveal">
+          <h3>Create Category</h3>
+          <form id="categoryForm" class="grid">
+            <label>
+              Category Name
+              <input id="categoryName" required placeholder="Web Exploitation" />
+            </label>
+            <label>
+              Description
+              <textarea id="categoryDescription" required placeholder="Browser, auth, injection, APIs"></textarea>
+            </label>
+            <button class="btn btn-primary" type="submit">Create Category</button>
+          </form>
+        </article>
+
+        <article class="card panel reveal" style="animation-delay: 0.07s">
+          <h3>Create Challenge</h3>
+          <form id="challengeForm" class="grid">
+            <label>
+              Category
+              <select id="adminCategorySelect"></select>
+            </label>
+            <label>
+              Question
+              <textarea id="challengeQuestion" required placeholder="Find the hidden admin token in the response headers"></textarea>
+            </label>
+            <label>
+              Answer
+              <input id="challengeAnswer" required placeholder="CTF{token_here}" />
+            </label>
+            <label>
+              Points
+              <input id="challengePoints" type="number" min="0" value="100" required />
+            </label>
+            <button class="btn btn-primary" type="submit">Create Challenge</button>
+          </form>
+        </article>
+      </section>
+
+      <section class="grid" style="margin-top:16px;">
+        <article class="card panel reveal" style="animation-delay: 0.14s">
+          <div class="history-head">
+            <h3>Previous Challenges</h3>
+            <div class="history-controls">
+              <label class="history-filter-label">
+                Category
+                <select id="historyCategoryFilter"></select>
+              </label>
+              <button id="refreshHistoryBtn" class="btn btn-secondary" type="button">Refresh</button>
+            </div>
+          </div>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Category</th>
+                  <th>Question</th>
+                  <th>Points</th>
+                </tr>
+              </thead>
+              <tbody id="challengeHistoryBody"></tbody>
+            </table>
+          </div>
+        </article>
+
+        <article class="card panel reveal" style="animation-delay: 0.18s">
+          <div class="history-head">
+            <h3>Team Submissions</h3>
+            <div class="history-controls">
+              <label class="history-filter-label">
+                Search
+                <input id="submissionsSearch" placeholder="Team, student, challenge, answer" />
+              </label>
+              <label class="history-filter-label">
+                Result
+                <select id="submissionsResultFilter">
+                  <option value="">All</option>
+                  <option value="correct">Correct</option>
+                  <option value="incorrect">Incorrect</option>
+                </select>
+              </label>
+              <button id="refreshSubmissionsBtn" class="btn btn-secondary" type="button">Refresh</button>
+            </div>
+          </div>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Submission</th>
+                  <th>Team</th>
+                  <th>Student</th>
+                  <th>Challenge</th>
+                  <th>Answer</th>
+                  <th>Result</th>
+                </tr>
+              </thead>
+              <tbody id="submissionsBody"></tbody>
+            </table>
+          </div>
+        </article>
+      </section>
+    </main>
+
+    <main class="page admin-lock-screen" id="adminLockScreen">
+      <article class="card panel admin-lock-card reveal">
+        <h3>Admin Access</h3>
+        <label>
+          Password
+          <input id="adminPasswordInput" type="password" placeholder="Enter admin password" autocomplete="off" />
+        </label>
+        <div class="admin-lock-actions">
+          <button id="adminPasswordSubmit" class="btn btn-primary" type="button">Unlock</button>
+          <a class="btn btn-secondary" href="index.html">Back</a>
+        </div>
+        <p id="adminPasswordError" class="admin-lock-error" hidden>Invalid password.</p>
+      </article>
+    </main>
+
+    <script src="assets/js/common.js"></script>
+    <script src="assets/js/runtime-config.js"></script>
+    <script src="assets/js/api.js"></script>
+    <script src="assets/js/admin.js"></script>
+  </body>
+</html>
