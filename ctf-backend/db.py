@@ -58,6 +58,21 @@ def _progressive_award(points: int, attempt_no: int) -> int:
     return max(int(round(points * multiplier)), 0)
 
 
+def _progressive_award_db_or_python(cursor, points: int, attempt_no: int) -> int:
+    try:
+        cursor.execute(
+            "SELECT fn_progressive_award(:1, :2) FROM dual",
+            (points, attempt_no),
+        )
+        row = cursor.fetchone()
+        if row and row[0] is not None:
+            return int(row[0])
+    except oracledb.DatabaseError:
+        # Backward-compatible fallback when schema objects are not yet migrated.
+        pass
+    return _progressive_award(points, attempt_no)
+
+
 @contextmanager
 def get_connection():
     validate_db_config()
@@ -615,7 +630,7 @@ def create_submission(team_id: int, student_id: int, challenge_no: int, submitte
             next_challenge_no = current_challenge_no
 
             if is_correct:
-                awarded_points = _progressive_award(points, attempt_no)
+                awarded_points = _progressive_award_db_or_python(cursor, points, attempt_no)
                 next_challenge_no = _next_challenge_no(cursor, current_challenge_no)
                 cursor.execute(
                     """
@@ -655,15 +670,21 @@ def create_submission(team_id: int, student_id: int, challenge_no: int, submitte
 def get_leaderboard() -> list:
     with get_connection() as connection:
         with connection.cursor() as cursor:
-            cursor.execute(
-                """
-                SELECT team_id, team_name, score
-                FROM team
-                ORDER BY score DESC, team_name ASC
-                """
-            )
-            rows = cursor.fetchall()
-            return _as_dict_list(cursor, rows)
+            try:
+                result_cursor = connection.cursor()
+                cursor.callproc("sp_get_leaderboard", [result_cursor])
+                rows = result_cursor.fetchall()
+                return _as_dict_list(result_cursor, rows)
+            except oracledb.DatabaseError:
+                cursor.execute(
+                    """
+                    SELECT team_id, team_name, score
+                    FROM team
+                    ORDER BY score DESC, team_name ASC
+                    """
+                )
+                rows = cursor.fetchall()
+                return _as_dict_list(cursor, rows)
 
 
 def list_admin_submissions() -> list:
