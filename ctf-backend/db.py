@@ -752,6 +752,7 @@ def list_admin_challenges(category_id: int | None = None) -> list:
                     """
                     SELECT challenge_no, question_text, answer, points, category_id, is_active
                     FROM challenge
+                    WHERE is_active = 1
                     ORDER BY challenge_no DESC
                     """
                 )
@@ -760,7 +761,7 @@ def list_admin_challenges(category_id: int | None = None) -> list:
                     """
                     SELECT challenge_no, question_text, answer, points, category_id, is_active
                     FROM challenge
-                    WHERE category_id = :1
+                    WHERE category_id = :1 AND is_active = 1
                     ORDER BY challenge_no DESC
                     """,
                     (category_id,),
