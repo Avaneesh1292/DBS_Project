@@ -107,6 +107,15 @@
     });
   }
 
+  async function adminListChallenges(params) {
+    const queryParts = [];
+    if (params && params.category_id) {
+      queryParts.push(`category_id=${encodeURIComponent(params.category_id)}`);
+    }
+    const query = queryParts.length ? `?${queryParts.join("&")}` : "";
+    return request(`/admin/challenges${query}`);
+  }
+
   async function adminListSubmissions() {
     return request("/admin/submissions");
   }
@@ -136,6 +145,7 @@
     getLeaderboard,
     adminCreateCategory,
     adminCreateChallenge,
+    adminListChallenges,
     adminDeleteChallenge,
     adminListSubmissions,
     adminListFirstBloods,

@@ -11,6 +11,7 @@ from db import (
     get_team_progress,
     get_leaderboard,
     list_admin_submissions,
+    list_admin_challenges,
     list_categories,
     list_challenges,
     list_hints,
@@ -214,6 +215,18 @@ def admin_challenges_delete(challenge_no: int) -> tuple:
         return jsonify({"message": str(ex)}), 404
     except Exception as ex:
         return jsonify({"message": "Failed to deactivate challenge", "error": str(ex)}), 500
+
+
+@app.get("/api/admin/challenges")
+def admin_challenges_list() -> tuple:
+    try:
+        category_id = _parse_int(request.args.get("category_id"), "category_id")
+        data = list_admin_challenges(category_id=category_id)
+        return jsonify({"challenges": data}), 200
+    except ValueError as ex:
+        return jsonify({"message": str(ex)}), 400
+    except Exception as ex:
+        return jsonify({"message": "Failed to fetch admin challenges", "error": str(ex)}), 500
 
 
 @app.get("/api/admin/submissions")

@@ -744,6 +744,31 @@ def list_admin_submissions() -> list:
                         return _as_dict_list(cursor, rows)
 
 
+def list_admin_challenges(category_id: int | None = None) -> list:
+    with get_connection() as connection:
+        with connection.cursor() as cursor:
+            if category_id is None:
+                cursor.execute(
+                    """
+                    SELECT challenge_no, question_text, answer, points, category_id, is_active
+                    FROM challenge
+                    ORDER BY challenge_no DESC
+                    """
+                )
+            else:
+                cursor.execute(
+                    """
+                    SELECT challenge_no, question_text, answer, points, category_id, is_active
+                    FROM challenge
+                    WHERE category_id = :1
+                    ORDER BY challenge_no DESC
+                    """,
+                    (category_id,),
+                )
+            rows = cursor.fetchall()
+            return _as_dict_list(cursor, rows)
+
+
 def list_admin_first_bloods() -> list:
     with get_connection() as connection:
         with connection.cursor() as cursor:

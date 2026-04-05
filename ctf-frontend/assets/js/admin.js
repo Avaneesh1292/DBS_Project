@@ -110,6 +110,7 @@
           <td>${challenge.challenge_no}</td>
           <td>${categoryNameById(challenge.category_id)}</td>
           <td>${challenge.question_text || ""}</td>
+          <td>${challenge.answer || ""}</td>
           <td>${challenge.points ?? 0}</td>
           <td><button class="btn btn-danger btn-sm" style="padding: 4px 8px; font-size: 0.75rem;" onclick="window.adminDeleteChallenge(${challenge.challenge_no})">Delete</button></td>
         `;
@@ -123,7 +124,7 @@
       : undefined;
 
     try {
-      const response = await api.listChallenges(
+      const response = await api.adminListChallenges(
         selectedCategoryId ? { category_id: selectedCategoryId } : undefined
       );
       const challenges = response.challenges || response.data || [];
