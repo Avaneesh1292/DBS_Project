@@ -6,6 +6,8 @@ from db import (
     create_category,
     create_challenge,
     create_submission,
+    deactivate_challenge,
+    list_admin_first_bloods,
     get_team_progress,
     get_leaderboard,
     list_admin_submissions,
@@ -203,6 +205,17 @@ def admin_challenges_create() -> tuple:
         return jsonify({"message": "Failed to create challenge", "error": str(ex)}), 500
 
 
+@app.delete("/api/admin/challenges/<int:challenge_no>")
+def admin_challenges_delete(challenge_no: int) -> tuple:
+    try:
+        result = deactivate_challenge(challenge_no=challenge_no)
+        return jsonify(result), 200
+    except ValueError as ex:
+        return jsonify({"message": str(ex)}), 404
+    except Exception as ex:
+        return jsonify({"message": "Failed to deactivate challenge", "error": str(ex)}), 500
+
+
 @app.get("/api/admin/submissions")
 def admin_submissions_list() -> tuple:
     try:
@@ -210,6 +223,15 @@ def admin_submissions_list() -> tuple:
         return jsonify({"submissions": data}), 200
     except Exception as ex:
         return jsonify({"message": "Failed to fetch submissions", "error": str(ex)}), 500
+
+
+@app.get("/api/admin/first-bloods")
+def admin_first_bloods_list() -> tuple:
+    try:
+        data = list_admin_first_bloods()
+        return jsonify({"first_bloods": data}), 200
+    except Exception as ex:
+        return jsonify({"message": "Failed to fetch first blood records", "error": str(ex)}), 500
 
 
 if __name__ == "__main__":

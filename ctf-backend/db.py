@@ -113,7 +113,7 @@ def _as_dict_list(cursor, rows):
 
 
 def _first_challenge_no(cursor) -> int | None:
-    cursor.execute("SELECT MIN(challenge_no) FROM challenge")
+    cursor.execute("SELECT MIN(challenge_no) FROM challenge WHERE is_active = 1")
     row = cursor.fetchone()
     if not row or row[0] is None:
         return None
@@ -126,6 +126,7 @@ def _next_challenge_no(cursor, current_challenge_no: int) -> int | None:
         SELECT MIN(challenge_no)
         FROM challenge
         WHERE challenge_no > :1
+          AND is_active = 1
         """,
         (current_challenge_no,),
     )
@@ -147,35 +148,60 @@ def _ensure_current_challenge_no(cursor, team_id: int, lock_row: bool = False) -
 
     current = int(row[0]) if row[0] is not None else None
     if current is not None:
-        return current
+        cursor.execute(
+            """
+            SELECT challenge_no
+            FROM challenge
+            WHERE challenge_no = :1
+              AND is_active = 1
+            """,
+            (current,),
+        )
+        active_row = cursor.fetchone()
+        if active_row:
+            return current
 
+        next_active = _next_challenge_no(cursor, current)
+        cursor.execute(
+            """
+            UPDATE team
+            SET current_challenge_no = :1
+            WHERE team_id = :2
+            """,
+            (next_active, team_id),
+        )
+        return next_active
+
+    # If current is None, they either haven't started or they finished everything available previously.
+    # Find the lowest active challenge they HAVEN'T solved correctly.
     cursor.execute(
         """
-        SELECT COUNT(1)
-        FROM submission
-        WHERE team_id = :1
-          AND is_correct = 1
+        SELECT MIN(c.challenge_no)
+        FROM challenge c
+        WHERE c.is_active = 1
+          AND NOT EXISTS (
+              SELECT 1
+              FROM submission s
+              WHERE s.team_id = :1
+                AND s.challenge_no = c.challenge_no
+                AND s.is_correct = 1
+          )
         """,
         (team_id,),
     )
-    solved_row = cursor.fetchone()
-    solved_count = int(solved_row[0]) if solved_row and solved_row[0] is not None else 0
-    if solved_count > 0:
-        return None
+    unsolved_row = cursor.fetchone()
+    next_unsolved = int(unsolved_row[0]) if unsolved_row and unsolved_row[0] is not None else None
 
-    first = _first_challenge_no(cursor)
-    if first is None:
-        return None
-
+    # Update team with what we found (could be a valid ID or None if they've solved everything)
     cursor.execute(
         """
         UPDATE team
         SET current_challenge_no = :1
         WHERE team_id = :2
         """,
-        (first, team_id),
+        (next_unsolved, team_id),
     )
-    return first
+    return next_unsolved
 
 
 def ping_database() -> dict:
@@ -375,6 +401,7 @@ def list_challenges(category_id: int | None = None, team_id: int | None = None) 
                         SELECT challenge_no, question_text, points, category_id
                         FROM challenge
                         WHERE challenge_no = :1
+                          AND is_active = 1
                         """,
                         (current_challenge_no,),
                     )
@@ -385,6 +412,7 @@ def list_challenges(category_id: int | None = None, team_id: int | None = None) 
                         FROM challenge
                         WHERE challenge_no = :1
                           AND category_id = :2
+                          AND is_active = 1
                         """,
                         (current_challenge_no, category_id),
                     )
@@ -397,6 +425,7 @@ def list_challenges(category_id: int | None = None, team_id: int | None = None) 
                     """
                     SELECT challenge_no, question_text, points, category_id
                     FROM challenge
+                    WHERE is_active = 1
                     ORDER BY challenge_no
                     """
                 )
@@ -406,6 +435,7 @@ def list_challenges(category_id: int | None = None, team_id: int | None = None) 
                     SELECT challenge_no, question_text, points, category_id
                     FROM challenge
                     WHERE category_id = :1
+                      AND is_active = 1
                     ORDER BY challenge_no
                     """,
                     (category_id,),
@@ -551,12 +581,13 @@ def create_submission(team_id: int, student_id: int, challenge_no: int, submitte
                 SELECT answer, points
                 FROM challenge
                 WHERE challenge_no = :1
+                  AND is_active = 1
                 """,
                 (current_challenge_no,),
             )
             challenge_row = cursor.fetchone()
             if not challenge_row:
-                raise ValueError("Challenge not found")
+                raise ValueError("Challenge not found or inactive")
 
             expected_answer = str(challenge_row[0]).strip()
             points = int(challenge_row[1])
@@ -702,15 +733,43 @@ def list_admin_submissions() -> list:
                                         s.submitted_answer,
                                         s.is_correct
                                 FROM submission s
-                                JOIN team t
+                                LEFT JOIN team t
                                     ON t.team_id = s.team_id
-                                JOIN student st
+                                LEFT JOIN student st
                                     ON st.student_id = s.student_id
                                 ORDER BY s.submission_id DESC
                                 """
                         )
                         rows = cursor.fetchall()
                         return _as_dict_list(cursor, rows)
+
+
+def list_admin_first_bloods() -> list:
+    with get_connection() as connection:
+        with connection.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT
+                    fb.challenge_no,
+                    c.question_text,
+                    fb.team_id,
+                    t.team_name,
+                    fb.student_id,
+                    st.name AS student_name,
+                    fb.submission_id,
+                    fb.awarded_at
+                FROM challenge_first_blood fb
+                JOIN challenge c
+                    ON c.challenge_no = fb.challenge_no
+                JOIN team t
+                    ON t.team_id = fb.team_id
+                JOIN student st
+                    ON st.student_id = fb.student_id
+                ORDER BY fb.awarded_at DESC
+                """
+            )
+            rows = cursor.fetchall()
+            return _as_dict_list(cursor, rows)
 
 
 def create_category(category_name: str, description: str | None = None) -> dict:
@@ -782,7 +841,9 @@ def create_challenge(category_id: int, question_text: str, answer: str, points: 
                 """
                 UPDATE team
                 SET current_challenge_no = (
-                    SELECT MIN(challenge_no) FROM challenge
+                    SELECT MIN(challenge_no)
+                    FROM challenge
+                    WHERE is_active = 1
                 )
                 WHERE current_challenge_no IS NULL
                   AND NOT EXISTS (
@@ -796,3 +857,59 @@ def create_challenge(category_id: int, question_text: str, answer: str, points: 
 
             connection.commit()
             return {"challenge_no": int(challenge_no)}
+
+
+def deactivate_challenge(challenge_no: int) -> dict:
+    with get_connection() as connection:
+        with connection.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT is_active
+                FROM challenge
+                WHERE challenge_no = :1
+                FOR UPDATE
+                """,
+                (challenge_no,),
+            )
+            row = cursor.fetchone()
+            if not row:
+                raise ValueError("Challenge not found")
+
+            is_active = int(row[0]) if row[0] is not None else 0
+            if is_active == 0:
+                connection.commit()
+                return {
+                    "challenge_no": challenge_no,
+                    "is_active": False,
+                    "already_inactive": True,
+                }
+
+            cursor.execute(
+                """
+                UPDATE challenge
+                SET is_active = 0
+                WHERE challenge_no = :1
+                """,
+                (challenge_no,),
+            )
+
+            cursor.execute(
+                """
+                UPDATE team t
+                SET current_challenge_no = (
+                    SELECT MIN(c.challenge_no)
+                    FROM challenge c
+                    WHERE c.is_active = 1
+                      AND c.challenge_no > t.current_challenge_no
+                )
+                WHERE t.current_challenge_no = :1
+                """,
+                (challenge_no,),
+            )
+
+            connection.commit()
+            return {
+                "challenge_no": challenge_no,
+                "is_active": False,
+                "already_inactive": False,
+            }

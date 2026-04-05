@@ -110,6 +110,16 @@
     return request("/admin/submissions");
   }
 
+  async function adminListFirstBloods() {
+    return request("/admin/first-bloods");
+  }
+
+  async function adminDeleteChallenge(challengeNo) {
+    return request(`/admin/challenges/${encodeURIComponent(challengeNo)}`, {
+      method: "DELETE",
+    });
+  }
+
   window.CTFApi = {
     API_BASE,
     health,
@@ -125,6 +135,8 @@
     getLeaderboard,
     adminCreateCategory,
     adminCreateChallenge,
+    adminDeleteChallenge,
     adminListSubmissions,
+    adminListFirstBloods,
   };
 })();

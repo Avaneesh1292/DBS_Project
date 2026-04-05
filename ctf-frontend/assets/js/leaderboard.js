@@ -18,6 +18,7 @@
   const statTeams = byId("statTeams");
   const statTop = byId("statTop");
   const statStatus = byId("statStatus");
+  const activityFeed = byId("recentActivityFeed");
 
   function setStatus(label, cssClass) {
     if (!statStatus) return;
@@ -131,6 +132,41 @@
     setStatus("LIVE", "status-ok");
   }
 
+  function renderActivityFeed(submissions) {
+    if (!activityFeed) return;
+    const correctOnes = submissions
+      .filter((s) => Number(s.is_correct) === 1)
+      .slice(0, 5);
+
+    if (!correctOnes.length) {
+      activityFeed.innerHTML = '<div class="muted-cell" style="font-size:0.7rem;">No flags captured yet.</div>';
+      return;
+    }
+
+    activityFeed.innerHTML = "";
+    correctOnes.forEach((s) => {
+      const item = document.createElement("div");
+      item.className = "activity-item";
+      item.innerHTML = `
+        <div class="a-team">${s.team_name || "Unknown Team"}</div>
+        <div class="a-desc">Solved challenge #${s.challenge_no}</div>
+        <div class="a-time">Just now</div>
+      `;
+      activityFeed.appendChild(item);
+    });
+  }
+
+  async function loadRecentActivity() {
+    if (!api || typeof api.adminListSubmissions !== "function") return;
+    try {
+      const response = await api.adminListSubmissions();
+      const subs = response.submissions || response.data || [];
+      renderActivityFeed(subs);
+    } catch (err) {
+      console.warn("Failed to load activity feed:", err);
+    }
+  }
+
   async function fetchLeaderboardPayload() {
     if (api && typeof api.getLeaderboard === "function") {
       return api.getLeaderboard();
@@ -172,6 +208,7 @@
         }
       }
       renderRows(rows);
+      loadRecentActivity();
     } catch (error) {
       const localRows = getLocalSessionRows();
       if (localRows.length) {

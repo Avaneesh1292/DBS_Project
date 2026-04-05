@@ -18,6 +18,12 @@ pip install -r requirements.txt
 
 Run `schema.sql` against your Oracle schema to create the tables.
 
+For existing databases, run the migration script before starting the backend:
+
+```sql
+@migrations/20260404_challenge_soft_delete.sql
+```
+
 Required environment variables:
 
 - `ORACLE_USER`
@@ -37,3 +43,4 @@ Server default: `http://localhost:3000`
 
 - Health check: `GET http://localhost:3000/api/health`
 - Database ping: `GET http://localhost:3000/api/db/ping`
+- Admin deactivate challenge (soft delete): `DELETE http://localhost:3000/api/admin/challenges/<challenge_no>`

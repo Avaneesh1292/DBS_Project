@@ -53,8 +53,10 @@
   const submissionsSearch = byId("submissionsSearch");
   const submissionsResultFilter = byId("submissionsResultFilter");
   const refreshSubmissionsBtn = byId("refreshSubmissionsBtn");
+  const firstBloodBody = byId("firstBloodBody");
+  const refreshFirstBloodBtn = byId("refreshFirstBloodBtn");
 
-  if (!categoryForm || !challengeForm || !adminCategorySelect || !historyCategoryFilter || !challengeHistoryBody || !refreshHistoryBtn || !submissionsBody || !submissionsSearch || !submissionsResultFilter || !refreshSubmissionsBtn) {
+  if (!categoryForm || !challengeForm || !adminCategorySelect || !historyCategoryFilter || !challengeHistoryBody || !refreshHistoryBtn || !submissionsBody || !submissionsSearch || !submissionsResultFilter || !refreshSubmissionsBtn || !firstBloodBody || !refreshFirstBloodBtn) {
     return;
   }
 
@@ -94,7 +96,7 @@
 
     if (!challenges.length) {
       const row = document.createElement("tr");
-      row.innerHTML = '<td colspan="4" class="muted-cell">No questions created yet.</td>';
+      row.innerHTML = '<td colspan="5" class="muted-cell">No questions created yet.</td>';
       challengeHistoryBody.appendChild(row);
       return;
     }
@@ -109,6 +111,7 @@
           <td>${categoryNameById(challenge.category_id)}</td>
           <td>${challenge.question_text || ""}</td>
           <td>${challenge.points ?? 0}</td>
+          <td><button class="btn btn-danger btn-sm" style="padding: 4px 8px; font-size: 0.75rem;" onclick="window.adminDeleteChallenge(${challenge.challenge_no})">Delete</button></td>
         `;
         challengeHistoryBody.appendChild(row);
       });
@@ -144,10 +147,14 @@
     submissions.forEach((submission) => {
       const row = document.createElement("tr");
       const isCorrect = Number(submission.is_correct) === 1;
+      
+      const teamDisplay = submission.team_name ? submission.team_name : (submission.team_id ? `Team ${submission.team_id}` : "<span class='muted-cell'>[Deleted Team]</span>");
+      const studentDisplay = submission.student_name ? submission.student_name : (submission.student_id ? `Student ${submission.student_id}` : "<span class='muted-cell'>[Deleted Student]</span>");
+
       row.innerHTML = `
         <td>#${submission.submission_id}</td>
-        <td>${submission.team_name || `Team ${submission.team_id}`}</td>
-        <td>${submission.student_name || `Student ${submission.student_id}`}</td>
+        <td>${teamDisplay}</td>
+        <td>${studentDisplay}</td>
         <td>#${submission.challenge_no}</td>
         <td>${submission.submitted_answer || ""}</td>
         <td class="${isCorrect ? "status-ok" : "status-error"}">${isCorrect ? "Correct" : "Incorrect"}</td>
@@ -194,6 +201,48 @@
       allSubmissions = [];
       renderSubmissionRows([]);
       showToast(error.message || "Failed to load submissions.", "Error");
+    }
+  }
+
+  function renderFirstBloodRows(records) {
+    firstBloodBody.innerHTML = "";
+
+    if (!records.length) {
+      const row = document.createElement("tr");
+      row.innerHTML = '<td colspan="5" class="muted-cell">No first blood records yet.</td>';
+      firstBloodBody.appendChild(row);
+      return;
+    }
+
+    records.forEach((record) => {
+      const row = document.createElement("tr");
+      const challengeText = record.question_text
+        ? `#${record.challenge_no} - ${record.question_text}`
+        : `#${record.challenge_no}`;
+      const awardedAt = record.awarded_at ? new Date(record.awarded_at).toLocaleString() : "-";
+      
+      const teamDisplay = record.team_name ? record.team_name : (record.team_id ? `Team ${record.team_id}` : "<span class='muted-cell'>[Deleted Team]</span>");
+      const studentDisplay = record.student_name ? record.student_name : (record.student_id ? `Student ${record.student_id}` : "<span class='muted-cell'>[Deleted Student]</span>");
+
+      row.innerHTML = `
+        <td>${challengeText}</td>
+        <td>${teamDisplay}</td>
+        <td>${studentDisplay}</td>
+        <td>#${record.submission_id}</td>
+        <td>${awardedAt}</td>
+      `;
+      firstBloodBody.appendChild(row);
+    });
+  }
+
+  async function loadFirstBloods() {
+    try {
+      const response = await api.adminListFirstBloods();
+      const records = response.first_bloods || response.data || [];
+      renderFirstBloodRows(records);
+    } catch (error) {
+      renderFirstBloodRows([]);
+      showToast(error.message || "Failed to load first blood records.", "Error");
     }
   }
 
@@ -253,6 +302,7 @@
   historyCategoryFilter.addEventListener("change", loadChallengeHistory);
   refreshHistoryBtn.addEventListener("click", loadChallengeHistory);
   refreshSubmissionsBtn.addEventListener("click", loadSubmissions);
+  refreshFirstBloodBtn.addEventListener("click", loadFirstBloods);
   submissionsSearch.addEventListener("input", applySubmissionFilters);
   submissionsResultFilter.addEventListener("change", applySubmissionFilters);
 
@@ -273,8 +323,20 @@
     loadCategories().then(async () => {
       await loadChallengeHistory();
       await loadSubmissions();
+      await loadFirstBloods();
     });
   }
+
+  window.adminDeleteChallenge = async function(challengeNo) {
+    if (!confirm(`Are you sure you want to deactivate challenge #${challengeNo}?`)) return;
+    try {
+      await api.adminDeleteChallenge(challengeNo);
+      showToast(`Challenge #${challengeNo} deactivated.`, "Success");
+      await loadChallengeHistory();
+    } catch (err) {
+      showToast(err.message || "Failed to deactivate challenge.", "Error");
+    }
+  };
 
   if (cachedAuth) {
     initAdmin();
