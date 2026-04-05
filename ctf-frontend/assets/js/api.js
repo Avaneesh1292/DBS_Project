@@ -1,12 +1,13 @@
 (function () {
   const API_BASE =
     (window.CTF_CONFIG && window.CTF_CONFIG.API_BASE_URL) ||
-    "http://localhost:3000/api";
+    "http://localhost:5000/api";
 
   async function request(path, options) {
     const response = await fetch(`${API_BASE}${path}`, {
       headers: {
         "Content-Type": "application/json",
+        "ngrok-skip-browser-warning": "69420",
         ...(options && options.headers ? options.headers : {}),
       },
       ...options,
